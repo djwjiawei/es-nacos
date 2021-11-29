@@ -1,0 +1,30 @@
+{
+    "name": "es-swoole/nacos",
+    "description": "nacos包",
+    "repositories": [
+        {
+            "type": "git",
+            "url": "git@git.dev.enbrands.com:X/php/interaction/easyswoole_common.git"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "EsSwoole\\Nacos\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "djw",
+            "email": "dongjw.1@jifenn.com"
+        }
+    ],
+    "extra": {
+        "es-swoole": {
+            "config" : "EsSwoole\\Nacos\\ConfigPublish",
+            "provider" : "EsSwoole\\Base\\Provider\\EsProvider"
+        }
+    },
+    "require": {
+        "es-swoole/common": "dev-feature/log"
+    }
+}
