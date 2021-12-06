@@ -38,6 +38,7 @@ class ConfigSyncMessage implements ProcessMessageInterface
             NacosConfigManager::getInstance()->loadFile($file);
             Logger::getInstance()->info("进程: {$processName} 同步配置信息{$file}");
         }
+        return true;
     }
 
     public function onException(\Throwable $throwable)

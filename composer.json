@@ -21,7 +21,7 @@
     "extra": {
         "es-swoole": {
             "config" : "EsSwoole\\Nacos\\ConfigPublish",
-            "provider" : "EsSwoole\\Base\\Provider\\EsProvider"
+            "provider" : "EsSwoole\\Nacos\\Provider\\NacosProvider"
         }
     },
     "require": {

@@ -6,7 +6,7 @@
  * Time: 13:51
  */
 
-namespace EsSwoole\Base;
+namespace EsSwoole\Nacos;
 
 
 use EsSwoole\Base\Abstracts\ConfigPublishInterface;

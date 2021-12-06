@@ -9,14 +9,13 @@
 namespace EsSwoole\Nacos;
 
 
-use EasySwoole\Component\Process\Manager;
 use EasySwoole\Component\Singleton;
 use EasySwoole\EasySwoole\Config;
 use EasySwoole\Utility\File;
 use EsSwoole\Base\Common\ProcessSync;
 use EsSwoole\Nacos\Request\NacosRequest;
 
-class NacosConfigManager
+class NacosConfigManager extends AbstractConfigCenter
 {
     use Singleton;
 
@@ -26,14 +25,14 @@ class NacosConfigManager
     protected $configMd5 = [];
 
     /**
-     * @var array 上次拉取配置的进程信息(用于进程挂掉重新拉取配置)
-     */
-    protected $processPidArr = [];
-
-    /**
      * @var array 要从nacos拉取的配置信息
      */
     protected $fetchInfo = [];
+
+    /**
+     * @var int 拉取配置开始时间
+     */
+    protected $startTime;
 
     //json解析格式
     const DECODE_JSON = 'json';
@@ -46,6 +45,7 @@ class NacosConfigManager
 
     public function __construct()
     {
+        $this->startTime = time();
         $this->fetchInfo = config('nacosFetch.config');
     }
 
@@ -84,62 +84,27 @@ class NacosConfigManager
                 file_put_contents($saveDir . "/{$file}.conf",$res);
 
                 if ($needMerge) {
-                    Config::getInstance()->setConf("nacos.{$file}",$this->decodeConfig($res));
+                    Config::getInstance()->setConf(
+                        "nacos.{$file}",
+                        $this->decodeConfig($res, $this->fetchInfo[$file]['type'])
+                    );
                 }
             }
         }
         return $configRes;
     }
 
-    /**
-     * 获取重启的进程id
-     * @return array
-     * User: dongjw
-     * Date: 2021/11/29 17:04
-     */
-    private function getDiffProcess()
-    {
-        $newProcess = Manager::getInstance()->info();
-        if (!$newProcess) {
-            return [];
-        }
-        $newGroupArr = [];
-        foreach ($newProcess as $item) {
-            $newGroupArr[$item['group']][] = $item['pid'];
-        }
-        $oldGroupArr = $this->processPidArr;
-        $this->processPidArr = $newGroupArr;
-
-        $return = [];
-        foreach ($newGroupArr as $groupName => $groupPids) {
-            $return = array_merge(
-                $return,
-                array_diff($groupPids,$oldGroupArr[$groupName] ?: [])
-            );
-        }
-        return $return;
-    }
-
     public function timerSyncConfig()
     {
         //拉取一次配置
         $needSyncConfig = $this->fetchConfig();
-
-        //同步重启的进程
-        $needSyncProcess = $this->getDiffProcess();
-        $syncAllMessage = serialize(new ConfigSyncMessage(array_keys($this->fetchInfo)));
-        foreach ($needSyncProcess as $pid) {
-            $process = Manager::getInstance()->getProcessByPid($pid);
-            if (!$process) {
-                continue;
-            }
-            ProcessSync::syncByPid($syncAllMessage,$pid);
+        if (!$needSyncConfig) {
+            return;
         }
 
         //配置文件改变,同步全部进程(除掉上边已经同步过的进程)
         ProcessSync::syncAllProcess(
-            serialize(new ConfigSyncMessage(array_keys($needSyncConfig))),
-            $needSyncProcess
+            serialize(new ConfigSyncMessage(array_keys($needSyncConfig)))
         );
     }
 
@@ -199,5 +164,27 @@ class NacosConfigManager
             default:
                 return $string;
         }
+    }
+
+    /**
+     * 获取拉取配置信息
+     * @return array
+     * User: dongjw
+     * Date: 2021/12/6 11:01
+     */
+    public function getFetchInfo()
+    {
+        return $this->fetchInfo;
+    }
+
+    /**
+     * 获取开始拉取配置的时间
+     * @return int
+     * User: dongjw
+     * Date: 2021/12/6 11:01
+     */
+    public function getStartTime()
+    {
+        return $this->startTime;
     }
 }
