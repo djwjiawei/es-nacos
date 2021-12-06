@@ -11,11 +11,16 @@ namespace EsSwoole\Nacos;
 
 use EasySwoole\Component\Singleton;
 use EasySwoole\EasySwoole\Config;
+use EasySwoole\EasySwoole\Logger;
 use EasySwoole\Utility\File;
+use EsSwoole\Base\Common\ConfigLoad;
 use EsSwoole\Base\Common\ProcessSync;
+use EsSwoole\Base\Util\AppUtil;
+use EsSwoole\Base\Util\CoroutineUtil;
 use EsSwoole\Nacos\Request\NacosRequest;
+use Swoole\Coroutine\Scheduler;
 
-class NacosConfigManager extends AbstractConfigCenter
+class NacosConfigManager
 {
     use Singleton;
 
@@ -132,6 +137,69 @@ class NacosConfigManager extends AbstractConfigCenter
     }
 
     /**
+     * 是否从本地加载
+     * @return bool
+     * User: dongjw
+     * Date: 2021/12/6 11:45
+     */
+    public function islLoadLocal()
+    {
+        //是开发环境且开发环境不拉取则从本地获取
+        if (config('APP_ENV') == AppUtil::DEV_ENV && !config('nacosDevFetch')) {
+            return true;
+        }else{
+            return false;
+        }
+    }
+
+    /**
+     * 加载一次配置
+     * User: dongjw
+     * Date: 2021/12/6 11:33
+     */
+    public function loadConfig()
+    {
+        //是开发环境且开发环境不拉取则从本地获取
+        if ($this->islLoadLocal()) {
+            ConfigLoad::loadDir(
+                $this->getLocalDir(),
+                EASYSWOOLE_ROOT
+            );
+        }else{
+            //从naocs中拉取一次
+            $pid = posix_getpid();
+            Logger::getInstance()->info("pid:{$pid} nacos拉取日志开始");
+            if (CoroutineUtil::isInCoroutine()) {
+                $this->fetchConfig(true);
+            }else{
+                //不在协程中的话，开启协程容器去执行
+                $schedule = new Scheduler();
+                $schedule->add(function () {
+                    $this->fetchConfig(true);
+                });
+                $schedule->start();
+            }
+            Logger::getInstance()->info("pid:{$pid} nacos拉取日志结束");
+        }
+    }
+
+    /**
+     * 当进程启动时拉取配置(主要用来进程重启重新拉取配置)
+     * @return bool
+     * User: dongjw
+     * Date: 2021/12/6 15:57
+     */
+    public function onProcessStartLoad()
+    {
+        //如果进程开始时间减服务启动前拉取配置事件小于10s,则证明是正常启动,否则认为是后面重启进程
+        if ((time() - $this->startTime) < 10) {
+            return false;
+        }
+        $this->loadConfig();
+        return true;
+    }
+
+    /**
      * 获取nacos存储路径
      * @return string
      * User: dongjw
@@ -160,7 +228,7 @@ class NacosConfigManager extends AbstractConfigCenter
             case 'yaml':
                 return yaml_parse($string);
             case 'ini':
-                return parse_ini_string($string);
+                return parse_ini_string($string,true);
             default:
                 return $string;
         }

@@ -10,6 +10,7 @@ namespace EsSwoole\Nacos\Provider;
 
 
 use EasySwoole\Component\Process\Manager;
+use EasySwoole\EasySwoole\ServerManager;
 use EsSwoole\Base\Abstracts\AbstractProvider;
 use EsSwoole\Base\Common\Event;
 use EsSwoole\Nacos\NacosConfigManager;
@@ -20,15 +21,17 @@ class NacosProvider extends AbstractProvider
 
     public function register()
     {
-        //注册一个拉取配置事件
+        //注册自定义进程事件,用来自定义进程重启后重新拉取新的配置
         Event::getInstance()->add(Event::USER_PROCESS_START_EVENT,function (){
-            //如果进程开始时间减服务启动前拉取配置事件小于10s,则证明是正常启动,否则认为是后面重启进程
-            if ((time() - NacosConfigManager::getInstance()->getStartTime()) < 10) {
-                return false;
-            }
-            NacosConfigManager::getInstance()->loadConfig();
-            return true;
+            NacosConfigManager::getInstance()->onProcessStartLoad();
         });
+
+        //注册worker进程启动事件,用来worker进程重启后重新拉取新的配置
+        $register = ServerManager::getInstance()->getEventRegister();
+        $register->add($register::onWorkerStart, function (\Swoole\Server $server,int $workerId) {
+            NacosConfigManager::getInstance()->onProcessStartLoad();
+        });
+
         //服务启动时拉取一次配置
         NacosConfigManager::getInstance()->loadConfig();
     }
