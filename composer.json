@@ -25,6 +25,6 @@
         }
     },
     "require": {
-        "es-swoole/common": "dev-feature/log"
+        "es-swoole/common": "dev-master"
     }
 }
