@@ -25,7 +25,7 @@ class NacosProcess extends AbstractProcess
     public function run($arg)
     {
         //定时间隔,默认30s
-        $interval = config('nocosFetch.interval') ?: 30;
+        $interval = config('nacosFetch.interval') ?: 30;
         Timer::tick($interval * 1000, function () {
             NacosConfigManager::getInstance()->timerSyncConfig();
         });
