@@ -10,7 +10,8 @@
     "autoload": {
         "psr-4": {
             "EsSwoole\\Nacos\\": "src/"
-        }
+        },
+        "files": ["src/autoload.php"]
     },
     "authors": [
         {

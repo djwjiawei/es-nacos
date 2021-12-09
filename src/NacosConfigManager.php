@@ -13,7 +13,6 @@ use EasySwoole\Component\Singleton;
 use EasySwoole\EasySwoole\Config;
 use EasySwoole\EasySwoole\Logger;
 use EasySwoole\Utility\File;
-use EsSwoole\Base\Common\ConfigLoad;
 use EsSwoole\Base\Common\ProcessSync;
 use EsSwoole\Base\Util\AppUtil;
 use EsSwoole\Base\Util\CoroutineUtil;
@@ -44,6 +43,7 @@ class NacosConfigManager
 
     //yaml解析格式
     const DECODE_YAML = 'yaml';
+    const DECODE_YAM = 'yam';
 
     //ini解析格式
     const DECODE_INI = 'ini';
@@ -84,9 +84,9 @@ class NacosConfigManager
                 $configRes[$file] = $res;
 
                 //保存到项目根目录的nacos目录下
-                $saveDir = $this->getLocalDir();
+                $saveDir = nacosPath();
                 File::createDirectory($saveDir);
-                file_put_contents($saveDir . "/{$file}.conf",$res);
+                file_put_contents($saveDir . "/{$file}." . $this->fetchInfo[$file]['type'],$res);
 
                 if ($needMerge) {
                     Config::getInstance()->setConf(
@@ -114,6 +114,25 @@ class NacosConfigManager
     }
 
     /**
+     * 加载nacos目录的文件
+     * @return bool
+     * User: dongjw
+     * Date: 2021/12/9 13:54
+     */
+    public function loadDir()
+    {
+        $fileArr = File::scanDirectory(nacosPath());
+        if (!$fileArr || empty($fileArr['files'])) {
+            return false;
+        }
+        foreach ($fileArr['files'] as $file) {
+            $pathinfo = pathinfo($file);
+            $this->mergeConf($pathinfo['filename'],$pathinfo['extension']);
+        }
+        return true;
+    }
+
+    /**
      * 加载nacos配置
      * @param $file
      * @return bool
@@ -125,13 +144,30 @@ class NacosConfigManager
         if (!isset($this->fetchInfo[$file])) {
             return false;
         }
-        $content = file_get_contents(EASYSWOOLE_ROOT . "/nacos/{$file}.conf");
+        return $this->mergeConf($file, $this->fetchInfo[$file]);
+    }
+
+    /**
+     * set nacos配置文件数据
+     * @param $file
+     * @param $type
+     * @return bool
+     * User: dongjw
+     * Date: 2021/12/9 14:14
+     */
+    public function mergeConf($file,$type)
+    {
+        $filePath = nacosPath("{$file}.{$type}");
+        if (!file_exists($filePath)) {
+            return false;
+        }
+        $content = file_get_contents($filePath);
         if (!$content) {
             return false;
         }
         Config::getInstance()->setConf(
             "nacos.{$file}",
-            $this->decodeConfig($content,$this->fetchInfo[$file]['type'])
+            $this->decodeConfig($content,$type)
         );
         return true;
     }
@@ -145,7 +181,7 @@ class NacosConfigManager
     public function islLoadLocal()
     {
         //是开发环境且开发环境不拉取则从本地获取
-        if (config('APP_ENV') == AppUtil::DEV_ENV && !config('nacosDevFetch')) {
+        if (config('APP_ENV') == AppUtil::DEV_ENV && !config('nacosFetch.devIsFetch')) {
             return true;
         }else{
             return false;
@@ -161,10 +197,7 @@ class NacosConfigManager
     {
         //是开发环境且开发环境不拉取则从本地获取
         if ($this->islLoadLocal()) {
-            ConfigLoad::loadDir(
-                $this->getLocalDir(),
-                EASYSWOOLE_ROOT
-            );
+            $this->loadDir();
         }else{
             //从naocs中拉取一次
             $pid = posix_getpid();
@@ -200,17 +233,6 @@ class NacosConfigManager
     }
 
     /**
-     * 获取nacos存储路径
-     * @return string
-     * User: dongjw
-     * Date: 2021/11/29 17:04
-     */
-    public function getLocalDir()
-    {
-        return EASYSWOOLE_ROOT . '/nacos';
-    }
-
-    /**
      * 解析nacos文件内容
      * @param $string
      * @param string $type
@@ -222,12 +244,12 @@ class NacosConfigManager
     {
         $type = strtolower((string) $type);
         switch ($type) {
-            case 'json':
+            case self::DECODE_JSON:
                 return json_decode($string, true);
-            case 'yml':
-            case 'yaml':
+            case self::DECODE_YAM:
+            case self::DECODE_YAML:
                 return yaml_parse($string);
-            case 'ini':
+            case self::DECODE_INI:
                 return parse_ini_string($string,true);
             default:
                 return $string;

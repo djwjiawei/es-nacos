@@ -7,6 +7,8 @@
  */
 
 return [
+    //nacos服务端host
+    'host' => '',
     //间隔多长时间拉取一次配置(单位/秒)
     'interval' => 30,
     'config' => [
@@ -21,5 +23,7 @@ return [
             //配置类型(json/yaml/ini)
             'type' => \EsSwoole\Nacos\NacosConfigManager::DECODE_INI
         ]
-    ]
+    ],
+    //是否在开发环境也拉取nacos
+    'devIsFetch' => false
 ];

@@ -22,7 +22,7 @@ class NacosRequest extends AbstractRequest
 
     public function __construct($host = '')
     {
-        $this->apiDomain = $host ?: config('nacoshost');
+        $this->apiDomain = $host ?: config('nacosFetch.host');
     }
 
     /**

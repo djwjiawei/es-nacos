@@ -28,11 +28,10 @@ class ConfigSyncMessage implements ProcessMessageInterface
     {
         $processName = cli_get_process_title();
         if (!$this->data) {
-            $fileScan = File::scanDirectory(NacosConfigManager::getInstance()->getLocalDir());
+            $fileScan = File::scanDirectory(nacosPath());
             if (!$fileScan) {
                 return false;
             }
-
         }
         foreach ($this->data as $file) {
             NacosConfigManager::getInstance()->loadFile($file);
