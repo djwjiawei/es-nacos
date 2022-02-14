@@ -8,10 +8,10 @@
 
 namespace EsSwoole\Nacos\Provider;
 
-
 use EasySwoole\Component\Process\Manager;
 use EasySwoole\EasySwoole\ServerManager;
 use EsSwoole\Base\Abstracts\AbstractProvider;
+use EsSwoole\Base\Common\ConfigLoad;
 use EsSwoole\Base\Common\Event;
 use EsSwoole\Nacos\NacosConfigManager;
 use EsSwoole\Nacos\NacosProcess;
@@ -21,6 +21,8 @@ class NacosProvider extends AbstractProvider
 
     public function register()
     {
+        ConfigLoad::loadFile('nacosFetch', configPath('nacosFetch.php'));
+
         //注册自定义进程事件,用来自定义进程重启后重新拉取新的配置
         Event::getInstance()->add(Event::USER_PROCESS_START_EVENT,function (){
             NacosConfigManager::getInstance()->onProcessStartLoad();

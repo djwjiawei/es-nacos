@@ -13,6 +13,7 @@ use EasySwoole\Component\Singleton;
 use EasySwoole\EasySwoole\Config;
 use EasySwoole\EasySwoole\Logger;
 use EasySwoole\Utility\File;
+use EsSwoole\Base\Common\ConfigLoad;
 use EsSwoole\Base\Common\ProcessSync;
 use EsSwoole\Base\Util\AppUtil;
 use EsSwoole\Base\Util\CoroutineUtil;
@@ -139,12 +140,26 @@ class NacosConfigManager
      * User: dongjw
      * Date: 2021/11/29 17:04
      */
-    public function loadFile($file)
+    public function loadFile($file, $isReplaceDepend = false)
     {
         if (!isset($this->fetchInfo[$file])) {
             return false;
         }
-        return $this->mergeConf($file, $this->fetchInfo[$file]);
+        $res = $this->mergeConf($file, $this->fetchInfo[$file]['type']);
+        if (!$res) {
+            return false;
+        }
+
+        if ($isReplaceDepend && !empty($this->fetchInfo[$file]['depend'])) {
+            if (is_array($this->fetchInfo[$file]['depend'])) {
+                foreach ($this->fetchInfo[$file]['depend'] as $configKey) {
+                    ConfigLoad::loadFile($configKey, configPath($configKey . '.php'));
+                }
+            }else{
+                ConfigLoad::loadFile($this->fetchInfo[$file]['depend'], configPath($this->fetchInfo[$file]['depend'] . '.php'));
+            }
+        }
+        return true;
     }
 
     /**
