@@ -8,7 +8,6 @@
 
 namespace EsSwoole\Nacos;
 
-
 use EasySwoole\EasySwoole\Logger;
 use EasySwoole\EasySwoole\Trigger;
 use EasySwoole\Utility\File;

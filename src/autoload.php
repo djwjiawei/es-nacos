@@ -26,14 +26,15 @@ if (!function_exists('nacos')) {
     /**
      * 获取nacos配置
      *
-     * @param $key
+     * @param string $key
+     * @param mixed  $default
      *
      * @return array|mixed|null
      * User: dongjw
      * Date: 2022/2/14 10:39
      */
-    function nacos($key)
+    function nacos($key, $default = null)
     {
-        return \config("nacos.{$key}");
+        return \config("nacos.{$key}", $default);
     }
 }
