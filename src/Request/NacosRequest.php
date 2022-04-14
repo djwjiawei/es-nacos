@@ -27,7 +27,19 @@ class NacosRequest extends AbstractRequest
 
     public function __construct($host = '')
     {
-        $this->apiDomain = $host ?: config('nacosFetch.host');
+        $host = $host ?: config('nacosFetch.host');
+
+        if (!$host) {
+            throw new \Exception('nacos host为空');
+        }
+
+        $hostArr = explode(',', $host);
+
+        if (count($hostArr) == 0) {
+            $this->apiDomain = $hostArr[0];
+        } else {
+            $this->apiDomain = $hostArr[array_rand($hostArr)];
+        }
     }
 
     /**

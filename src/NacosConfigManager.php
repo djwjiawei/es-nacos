@@ -216,7 +216,7 @@ class NacosConfigManager
         }else{
             //从naocs中拉取一次
             $pid = posix_getpid();
-            Logger::getInstance()->info("pid:{$pid} nacos拉取日志开始");
+            Logger::getInstance()->console("pid:{$pid} nacos拉取日志开始");
             if (CoroutineUtil::isInCoroutine()) {
                 $this->fetchConfig(true);
             }else{
@@ -227,7 +227,7 @@ class NacosConfigManager
                 });
                 $schedule->start();
             }
-            Logger::getInstance()->info("pid:{$pid} nacos拉取日志结束");
+            Logger::getInstance()->console("pid:{$pid} nacos拉取日志结束");
         }
     }
 
